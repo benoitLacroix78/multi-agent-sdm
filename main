@@ -1,0 +1,58 @@
+import shutil
+import os
+
+# Créer l'arborescence du projet
+project_root = "/mnt/data/mon-projet-sdm-ai"
+backend_dir = os.path.join(project_root, "backend")
+frontend_dir = os.path.join(project_root, "frontend")
+
+os.makedirs(backend_dir, exist_ok=True)
+os.makedirs(frontend_dir, exist_ok=True)
+
+# Fichier backend main.py
+main_py_content = """
+from fastapi import FastAPI
+from langchain.chat_models import ChatOpenAI
+from langchain.agents import initialize_agent, Tool
+from langchain.memory import ConversationBufferMemory
+
+app = FastAPI()
+
+@app.get("/simulate")
+def simulate_project():
+    llm = ChatOpenAI(temperature=0, model="gpt-4")
+
+    memory = ConversationBufferMemory()
+
+    po = Tool(
+        name="Product Owner",
+        func=lambda x: f"[PO] Décrit les besoins métier : {x}",
+        description="Spécifie les besoins"
+    )
+
+    dev = Tool(
+        name="Développeur",
+        func=lambda x: f"[Dev] Implémente une solution pour : {x}",
+        description="Développe une fonctionnalité"
+    )
+
+    testeur = Tool(
+        name="Testeur QA",
+        func=lambda x: f"[QA] Vérifie et teste : {x}",
+        description="Teste la feature"
+    )
+
+    agent = initialize_agent(
+        [po, dev, testeur], llm, agent="zero-shot-react-description", verbose=True, memory=memory
+    )
+
+    result = agent.run("Créer une fonctionnalité de connexion utilisateur.")
+    return {"result": result}
+"""
+
+with open(os.path.join(backend_dir, "main.py"), "w") as f:
+    f.write(main_py_content)
+
+# Créer l'archive zip
+zip_path = shutil.make_archive("/mnt/data/mon-projet-sdm-ai", 'zip', project_root)
+zip_path
